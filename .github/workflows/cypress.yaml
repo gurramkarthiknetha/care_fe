@@ -16,6 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       REACT_CARE_API_URL: http://localhost:9000
+    strategy:
+      matrix:
+        job-index: [0, 1, 2, 3, 4, 5]
+        job-total: 6
     steps:
       - name: Checkout 📥
         uses: actions/checkout@v3
@@ -35,6 +39,14 @@ jobs:
           repository: ohcnetwork/care
           path: care
           ref: ${{ steps.backend-branch.outputs.branch }}
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ hashFiles('**/Dockerfile') }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
 
       - name: Start care docker containers 🐳
         run: |
@@ -64,6 +76,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node_modules-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node_modules-
 
       - name: Install dependencies 📦
         run: npm run install-all
@@ -107,6 +127,8 @@ jobs:
           COMMIT_INFO_MESSAGE: ${{github.event.pull_request.title}}
           COMMIT_INFO_SHA: ${{github.event.pull_request.head.sha}}
           CYPRESS_SPLIT_TESTS: "true"
+          SPLIT: ${{ matrix.job-total }}
+          SPLIT_INDEX: ${{ matrix.job-index }}
 
       - name: Cypress run for Forked PRs 🥬
         if: steps.pr_origin.outputs.is_forked == 'true'
