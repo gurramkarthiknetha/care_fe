@@ -106,6 +106,7 @@ jobs:
           NODE_OPTIONS: --max_old_space_size=4096
           COMMIT_INFO_MESSAGE: ${{github.event.pull_request.title}}
           COMMIT_INFO_SHA: ${{github.event.pull_request.head.sha}}
+          CYPRESS_SPLIT_TESTS: "true"
 
       - name: Cypress run for Forked PRs 🥬
         if: steps.pr_origin.outputs.is_forked == 'true'
@@ -127,8 +128,8 @@ jobs:
           NODE_OPTIONS: --max_old_space_size=4096
           COMMIT_INFO_MESSAGE: ${{github.event.pull_request.title}}
           COMMIT_INFO_SHA: ${{github.event.pull_request.head.sha}}
-          SPLIT: ${{ strategy.job-total }}
-          SPLIT_INDEX: ${{ strategy.job-index }}
+          SPLIT: ${{ matrix.job-total }}
+          SPLIT_INDEX: ${{ matrix.job-index }}
 
       - name: Download build artifacts
         uses: actions/download-artifact@v3
