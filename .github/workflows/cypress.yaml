@@ -8,10 +8,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Setup job to start the backend
+  # Setup job to build and cache the Docker image for the backend
   setup-backend:
-    name: Setup Backend
+    name: Build and Cache Backend Docker Image
     runs-on: ubuntu-latest
+    outputs:
+      backend_branch: ${{ steps.backend-branch.outputs.branch }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -32,40 +34,96 @@ jobs:
           path: care
           ref: ${{ steps.backend-branch.outputs.branch }}
 
-      - name: Start Backend Docker Containers
+      - name: Build Backend Docker Image
         run: |
           cd care
-          echo DISABLE_RATELIMIT=True >> docker/.prebuilt.env
-          echo "CORS_ALLOWED_ORIGINS=\"[\\\"http://localhost:4000\\\"]\"" >> docker/.prebuilt.env
-          echo JWKS_BASE64=\"$(cat ../.github/runner-files/jwks.b64.txt)\" >> docker/.prebuilt.env
-          make docker_config_file=docker-compose.pre-built.yaml up 
-          make docker_config_file=docker-compose.pre-built.yaml load-dummy-data
+          docker build -t care-backend:latest -f docker/Dockerfile .
           cd ..
+
+      - name: Save Docker Image as Tarball
+        run: |
+          docker save care-backend:latest -o care-backend.tar
+
+      - name: Cache Docker Image Tarball
+        uses: actions/cache@v3
+        with:
+          path: care-backend.tar
+          key: ${{ runner.os }}-care-backend-image-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-care-backend-image-
+
+  # Parallel Cypress test jobs with Docker container setup in each job
+  e2e-tests:
+    name: Cypress Parallel Tests with Cached Docker Image
+    needs: setup-backend
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        job_index: [0, 1, 2, 3]  # Adjust based on the number of parallel jobs needed
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Restore Docker Image Tarball from Cache
+        uses: actions/cache@v3
+        with:
+          path: care-backend.tar
+          key: ${{ runner.os }}-care-backend-image-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-care-backend-image-
+
+      - name: Load Docker Image
+        run: docker load -i care-backend.tar
+
+      - name: Start Backend Docker Container
+        run: |
+          docker run -d --name care-backend -p 9000:9000 care-backend:latest
         env:
           JWKS_BASE64: ${{ secrets.JWKS_BASE64 }}
 
       - name: Wait for Backend to be Ready
         uses: nick-fields/retry@v2
         with:
-          timeout_minutes: 1
-          max_attempts: 5
+          timeout_minutes: 2
+          max_attempts: 10
           command: curl -o /dev/null -s -w "%{http_code}\n" http://localhost:9000
           on_retry_command: sleep 5
 
-      - name: Start Frontend Server
-        run: npx vite preview --host &
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
-  # Parallel Cypress Test Job Using Reusable Workflow
-  cypress-tests:
-    name: Cypress Parallel Tests
-    needs: setup-backend
-    uses: bahmutov/cypress-workflows/.github/workflows/split.yml@v1
-    with:
-      nE2E: 4  # Number of parallel containers for running E2E specs
-      start: "http://localhost:4000"
-      config: "cypress/e2e/**/*.cy.ts"
-    secrets:
-      CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
-    steps:
-      - name: Install Cypress and Dependencies
-        run: npm ci  # Ensures all dependencies in package-lock.json are installed
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Start Frontend Server
+        run: |
+          npx vite preview --host &
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
+
+      - name: Run Cypress in Parallel
+        run: |
+          npx cypress-split --ci-build-id ${{ github.run_id }} --record --parallel \
+            --group "UI-Parallel" --spec "cypress/e2e/**/*.cy.ts" --env JOB_INDEX=${{ matrix.job_index }}
+        env:
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_INFO_MESSAGE: ${{ github.event.pull_request.title }}
+          COMMIT_INFO_SHA: ${{ github.event.pull_request.head.sha }}
+
+      - name: Upload Cypress Screenshots on Failure
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: cypress-screenshots-${{ matrix.job_index }}
+          path: cypress/screenshots
+
+      - name: Upload Cypress Videos
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: cypress-videos-${{ matrix.job_index }}
+          path: cypress/videos
