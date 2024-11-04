@@ -1,6 +1,8 @@
 name: Cypress Tests
 
 on:
+  schedule:
+    - cron: "30 22 * * *"
   pull_request:
     branches:
       - develop
@@ -8,18 +10,16 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Setup job to prepare backend and frontend
+  # Initial setup job to run backend and frontend setup
   setup:
     name: Setup Backend and Frontend
     runs-on: ubuntu-latest
-    outputs:
-      backend_branch: ${{ steps.set_backend_branch.outputs.branch }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
       - name: Set Backend Branch
-        id: set_backend_branch
+        id: backend-branch
         run: |
           if [[ '${{ github.event.pull_request.base.ref }}' == 'staging' ]]; then
             echo "branch=staging" >> $GITHUB_OUTPUT
@@ -32,7 +32,7 @@ jobs:
         with:
           repository: ohcnetwork/care
           path: care
-          ref: ${{ steps.set_backend_branch.outputs.branch }}
+          ref: ${{ steps.backend-branch.outputs.branch }}
 
       - name: Start Backend Docker Containers
         run: |
@@ -71,9 +71,9 @@ jobs:
           path: |
             ~/.cache/Cypress
             node_modules
-          key: ${{ runner.os }}-build-${{ hashFiles('package-lock.json') }}
+          key: ${{ runner.os }}-cypress-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-build-
+            ${{ runner.os }}-cypress-
 
       - name: Start Frontend Server
         run: npx vite preview --host &
@@ -97,28 +97,15 @@ jobs:
           path: |
             ~/.cache/Cypress
             node_modules
-          key: ${{ runner.os }}-build-${{ hashFiles('package-lock.json') }}
+          key: ${{ runner.os }}-cypress-${{ hashFiles('package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-build-
+            ${{ runner.os }}-cypress-
 
-      - name: Cypress Run for Non-Forked PRs
-        if: steps.setup.outputs.is_forked == 'false'
+      - name: Cypress Run in Parallel
         run: |
           npx cypress-split --ci-build-id ${{ github.run_id }} --record --parallel \
             --group "UI-Parallel" --spec "cypress/e2e/**/*.cy.ts" --env JOB_INDEX=${{ matrix.job_index }}
         env:
-          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COMMIT_INFO_MESSAGE: ${{ github.event.pull_request.title }}
-          COMMIT_INFO_SHA: ${{ github.event.pull_request.head.sha }}
-
-      - name: Cypress Run for Forked PRs
-        if: steps.setup.outputs.is_forked == 'true'
-        run: |
-          npx cypress-split --ci-build-id ${{ github.run_id }} --group "UI-Parallel" \
-            --spec "cypress/e2e/**/*.cy.ts" --env JOB_INDEX=${{ matrix.job_index }}
-        env:
-          CYPRESS_SPLIT_TESTS: "true"
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMMIT_INFO_MESSAGE: ${{ github.event.pull_request.title }}
