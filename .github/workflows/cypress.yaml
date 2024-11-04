@@ -1,6 +1,8 @@
 name: Cypress Tests
 
 on:
+  schedule:
+    - cron: "30 22 * * *"
   pull_request:
     branches:
       - develop
@@ -12,27 +14,21 @@ jobs:
   setup-backend:
     name: Build and Cache Backend Docker Image
     runs-on: ubuntu-latest
-    outputs:
-      backend_branch: ${{ steps.backend-branch.outputs.branch }}
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-
-      - name: Set Backend Branch
-        id: backend-branch
-        run: |
-          if [[ '${{ github.event.pull_request.base.ref }}' == 'staging' ]]; then
-            echo "branch=staging" >> $GITHUB_OUTPUT
-          else
-            echo "branch=develop" >> $GITHUB_OUTPUT
-          fi
-
       - name: Checkout Backend Repository
         uses: actions/checkout@v3
         with:
-          repository: ohcnetwork/care
+          repository: ohcnetwork/care  # Replace with your backend repo
           path: care
-          ref: ${{ steps.backend-branch.outputs.branch }}
+          ref: ${{ github.event.pull_request.base.ref }}
+
+      - name: Set Backend Environment Variables
+        run: |
+          echo DISABLE_RATELIMIT=True >> care/docker/.prebuilt.env
+          echo "CORS_ALLOWED_ORIGINS=\"[\\\"http://localhost:4000\\\"]\"" >> care/docker/.prebuilt.env
+          echo JWKS_BASE64=\"$(cat .github/runner-files/jwks.b64.txt)\" >> care/docker/.prebuilt.env
+        env:
+          JWKS_BASE64: ${{ secrets.JWKS_BASE64 }}
 
       - name: Build Backend Docker Image
         run: |
@@ -62,7 +58,7 @@ jobs:
       matrix:
         job_index: [0, 1, 2, 3]  # Adjust based on the number of parallel jobs needed
     steps:
-      - name: Checkout Repository
+      - name: Checkout Frontend Repository
         uses: actions/checkout@v3
 
       - name: Restore Docker Image Tarball from Cache
