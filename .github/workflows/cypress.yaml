@@ -54,7 +54,7 @@ jobs:
 
       - name: Cache Backend Docker Image 📦
         run: |
-          docker save care_backend -o backend-cache.tar
+          docker save care-backend-1 -o backend-cache.tar
 
       - name: Upload Backend Cache Artifact
         uses: actions/upload-artifact@v3
