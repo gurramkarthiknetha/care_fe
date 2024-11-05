@@ -55,11 +55,12 @@ jobs:
       - name: Cache Backend Docker Image 📦
         run: |
           docker save care_backend -o backend-cache.tar
-        - name: Upload Backend Cache Artifact
-          uses: actions/upload-artifact@v3
-          with:
-            name: backend-docker-cache
-            path: backend-cache.tar
+
+      - name: Upload Backend Cache Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-docker-cache
+          path: backend-cache.tar
 
       - name: Determine Frontend PR Origin
         id: pr_origin
@@ -79,11 +80,12 @@ jobs:
       - name: Cache Frontend Build 📦
         run: |
           tar -cvf frontend-build-cache.tar ./build
-        - name: Upload Frontend Cache Artifact
-          uses: actions/upload-artifact@v3
-          with:
-            name: frontend-build-cache
-            path: frontend-build-cache.tar
+
+      - name: Upload Frontend Cache Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build-cache
+          path: frontend-build-cache.tar
 
   cypress-tests:
     needs: build-and-cache  # Ensure this job runs after build-and-cache completes
