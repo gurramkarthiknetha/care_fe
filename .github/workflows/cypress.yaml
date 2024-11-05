@@ -8,18 +8,21 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Setup job to build, cache the Docker image for the backend, and prepare frontend dependencies
-  setup-environment:
-    name: Build and Cache Frontend & Backend
+  cypress-run:
+    permissions: write-all
+    if: github.repository == 'ohcnetwork/care_fe'
     runs-on: ubuntu-latest
-    outputs:
-      backend_branch: ${{ steps.backend-branch.outputs.branch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        containers: [1, 2, 3, 4]
+    env:
+      REACT_CARE_API_URL: http://localhost:9000
     steps:
-      - name: Checkout Repository
+      - name: Checkout 📥
         uses: actions/checkout@v3
 
-      # Set backend branch based on target branch of the PR
-      - name: Set Backend Branch
+      - name: Set backend branch
         id: backend-branch
         run: |
           if [[ '${{ github.event.pull_request.base.ref }}' == 'staging' ]]; then
@@ -28,131 +31,183 @@ jobs:
             echo "branch=develop" >> $GITHUB_OUTPUT
           fi
 
-      # Checkout backend repository with the specified branch
-      - name: Checkout Backend Repository
+      - name: Checkout care backend 📥
         uses: actions/checkout@v3
         with:
           repository: ohcnetwork/care
           path: care
           ref: ${{ steps.backend-branch.outputs.branch }}
 
-      # Set Backend Environment Variables
-      - name: Set Backend Environment Variables
+      - name: Start care backend docker containers 🐳
         run: |
-          echo DISABLE_RATELIMIT=True >> care/docker/.prebuilt.env
-          echo "CORS_ALLOWED_ORIGINS=\"[\\\"http://localhost:4000\\\"]\"" >> care/docker/.prebuilt.env
-          echo JWKS_BASE64=\"$(cat .github/runner-files/jwks.b64.txt)\" >> care/docker/.prebuilt.env
+          cd care
+          echo DISABLE_RATELIMIT=True >> docker/.prebuilt.env
+          echo "CORS_ALLOWED_ORIGINS=\"[\\\"http://localhost:4000\\\"]\"" >> docker/.prebuilt.env
+          echo JWKS_BASE64=\"$(cat ../.github/runner-files/jwks.b64.txt)\" >> docker/.prebuilt.env
+          make docker_config_file=docker-compose.pre-built.yaml up 
+          make docker_config_file=docker-compose.pre-built.yaml load-dummy-data
+          cd ..
         env:
           JWKS_BASE64: ${{ secrets.JWKS_BASE64 }}
 
-      # Build Backend Docker Image
-      - name: Build Backend Docker Image
-        run: |
-          cd care
-          docker build -t care-backend:latest -f docker/Dockerfile .
-          cd ..
-
-      # Save Docker Image as Tarball for Caching
-      - name: Save Backend Docker Image as Tarball
-        run: docker save care-backend:latest -o care-backend.tar
-
-      # Install Frontend Dependencies and Build
-      - name: Install Frontend Dependencies and Build
-        run: |
-          npm install
-          npm run build
-
-      # Cache Backend Docker Image and Frontend Build
-      - name: Cache Backend Docker Image and Frontend Build
-        uses: actions/cache@v3
+      - name: Wait for care backend to be up ♻
+        uses: nick-fields/retry@v2
         with:
-          path: |
-            care-backend.tar
-            node_modules
-            dist  # Assuming frontend build output is in `dist` folder
-          key: ${{ runner.os }}-frontend-backend-cache-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-frontend-backend-cache-
+          timeout_minutes: 1
+          max_attempts: 5
+          command: curl -o /dev/null -s -w "%{http_code}\n" http://localhost:9000
+          on_retry_command: sleep 5
 
-  # Parallel Cypress test jobs with Docker container setup in each job
-  e2e-tests:
-    name: Cypress Parallel Tests with Cached Environment
-    needs: setup-environment
+      - name: Cache Backend Docker Image 📦
+        run: |
+          docker save care_backend -o backend-cache.tar
+        - name: Upload Backend Cache Artifact
+          uses: actions/upload-artifact@v3
+          with:
+            name: backend-docker-cache
+            path: backend-cache.tar
+
+      - name: Determine Frontend PR Origin
+        id: pr_origin
+        run: echo "::set-output name=is_forked::$( echo ${{ github.event.pull_request.head.repo.fork }})"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install frontend dependencies 📦
+        run: npm run install-all
+
+      - name: Build the frontend after downloading all dependencies ⚙️
+        run: npm run build
+
+      - name: Cache Frontend Build 📦
+        run: |
+          tar -cvf frontend-build-cache.tar ./build
+        - name: Upload Frontend Cache Artifact
+          uses: actions/upload-artifact@v3
+          with:
+            name: frontend-build-cache
+            path: frontend-build-cache.tar
+
+jobs:
+  cypress-run:
+    needs: build-and-cache  # Ensure this job runs after the build and cache job
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        job_index: [0, 1, 2, 3]  # Adjust based on the number of parallel jobs needed
+        containers: [1, 2, 3, 4]
+    env:
+      REACT_CARE_API_URL: http://localhost:9000
     steps:
-      - name: Checkout Repository
+      - name: Checkout 📥
         uses: actions/checkout@v3
 
-      # Restore Cached Backend Docker Image and Frontend Build
-      - name: Restore Backend Docker Image and Frontend Build Cache
-        uses: actions/cache@v3
+      # Download the cached backend Docker image
+      - name: Download Backend Cache
+        uses: actions/download-artifact@v3
         with:
-          path: |
-            care-backend.tar
-            node_modules
-            dist
-          key: ${{ runner.os }}-frontend-backend-cache-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-frontend-backend-cache-
+          name: backend-docker-cache
+          path: .
 
-      # Load Docker Image from Tarball
-      - name: Load Backend Docker Image
-        run: docker load -i care-backend.tar
+      # Load the cached Docker image
+      - name: Load Backend Docker Image 🐳
+        run: docker load -i backend-cache.tar
 
-      # Start Backend Docker Container
-      - name: Start Backend Docker Container
+      # Start backend Docker containers
+      - name: Start care backend docker containers 🐳
         run: |
-          docker run -d --name care-backend -p 9000:9000 care-backend:latest
-        env:
-          JWKS_BASE64: ${{ secrets.JWKS_BASE64 }}
+          cd care
+          echo DISABLE_RATELIMIT=True >> docker/.prebuilt.env
+          echo "CORS_ALLOWED_ORIGINS=\"[\\\"http://localhost:4000\\\"]\"" >> docker/.prebuilt.env
+          echo JWKS_BASE64=\"$(cat ../.github/runner-files/jwks.b64.txt)\" >> docker/.prebuilt.env
+          make docker_config_file=docker-compose.pre-built.yaml up
+          cd ..
 
-      # Wait for Backend to be Ready
-      - name: Wait for Backend Health Check
+      # Check backend health
+      - name: Wait for backend health check ♻
         uses: nick-fields/retry@v2
         with:
-          timeout_minutes: 2
-          max_attempts: 10
+          timeout_minutes: 1
+          max_attempts: 5
           command: curl -o /dev/null -s -w "%{http_code}\n" http://localhost:9000
           on_retry_command: sleep 5
 
-      # Install Frontend Dependencies (to ensure they are intact)
-      - name: Install Frontend Dependencies
-        run: npm ci  # `npm ci` is faster and ensures a clean install
+      # Download the cached frontend build
+      - name: Download Frontend Cache
+        uses: actions/download-artifact@v3
+        with:
+          name: frontend-build-cache
+          path: .
 
-      # Start Frontend Server
-      - name: Start Frontend Server
+      # Extract frontend cache and install dependencies
+      - name: Extract and Install Frontend Dependencies 📦
         run: |
-          npx vite preview --host &
-        env:
-          NODE_OPTIONS: --max_old_space_size=4096
+          tar -xvf frontend-build-cache.tar
+          npm install
 
-      # Run Cypress in Parallel
-      - name: Run Cypress in Parallel
+      # Install Chrome
+      - name: Install Specific Chrome Version
         run: |
-          npx cypress-split --ci-build-id ${{ github.run_id }} --record --parallel \
-            --group "UI-Parallel" --spec "cypress/e2e/**/*.cy.ts" --env JOB_INDEX=${{ matrix.job_index }}
+          sudo apt-get install -y wget
+          sudo wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo apt-get install ./google-chrome-stable_current_amd64.deb
+
+      # Run Cypress tests for Non-Forked PRs
+      - name: Cypress run for Non-Forked PRs 🥬
+        if: steps.pr_origin.outputs.is_forked == 'false'
+        uses: cypress-io/github-action@v5
+        with:
+          start: "npx vite preview --host"
+          wait-on: "http://localhost:4000"
+          wait-on-timeout: 300
+          browser: chrome
+          record: true
+          parallel: true
+          group: "UI-Chrome"
         env:
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_OPTIONS: --max_old_space_size=4096
           COMMIT_INFO_MESSAGE: ${{ github.event.pull_request.title }}
           COMMIT_INFO_SHA: ${{ github.event.pull_request.head.sha }}
 
-      # Upload Cypress Screenshots on Failure
-      - name: Upload Cypress Screenshots on Failure
+      # Run Cypress tests for Forked PRs
+      - name: Cypress run for Forked PRs 🥬
+        if: steps.pr_origin.outputs.is_forked == 'true'
+        uses: cypress-io/github-action@v5
+        with:
+          start: "npx vite preview --host"
+          wait-on: "http://localhost:4000"
+          wait-on-timeout: 300
+          browser: chrome
+          record: true
+          parallel: true
+          group: "UI-Chrome"
+        env:
+          CYPRESS_SPLIT_TESTS: "true"
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_OPTIONS: --max_old_space_size=4096
+          COMMIT_INFO_MESSAGE: ${{ github.event.pull_request.title }}
+          COMMIT_INFO_SHA: ${{ github.event.pull_request.head.sha }}
+          SPLIT: ${{ strategy.job-total }}
+          SPLIT_INDEX: ${{ strategy.job-index }}
+
+      # Upload Cypress screenshots on failure
+      - name: Upload cypress screenshots on failure 📸
         uses: actions/upload-artifact@v3
         if: failure()
         with:
-          name: cypress-screenshots-${{ matrix.job_index }}
+          name: cypress-screenshots
           path: cypress/screenshots
 
-      # Upload Cypress Videos
-      - name: Upload Cypress Videos
+      # Upload Cypress videos
+      - name: Upload cypress videos 📹
         uses: actions/upload-artifact@v3
-        if: failure()
+        if: steps.pr_origin.outputs.is_forked == 'true'
         with:
-          name: cypress-videos-${{ matrix.job_index }}
+          name: cypress-videos
           path: cypress/videos
