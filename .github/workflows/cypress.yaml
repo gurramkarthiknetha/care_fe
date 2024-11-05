@@ -87,8 +87,9 @@ jobs:
           name: frontend-build-cache
           path: frontend-build-cache.tar
 
+  jobs:
   cypress-tests:
-    needs: build-and-cache  # Ensure this job runs after build-and-cache completes
+    needs: build-and-cache
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -97,8 +98,15 @@ jobs:
     env:
       REACT_CARE_API_URL: http://localhost:9000
     steps:
-      - name: Checkout 📥
+      - name: Checkout care_fe repository 📥
         uses: actions/checkout@v3
+
+      - name: Checkout care backend repository 📥
+        uses: actions/checkout@v3
+        with:
+          repository: ohcnetwork/care  # Replace with the actual owner/repo if different
+          path: care
+          ref: ${{ needs.build-and-cache.outputs.backend-branch }}  # Ensure this is defined in the previous job
 
       # Download the cached backend Docker image
       - name: Download Backend Cache
@@ -111,18 +119,19 @@ jobs:
       - name: Load Backend Docker Image 🐳
         run: docker load -i backend-cache.tar
 
-      - name: List Directory Contents for Debugging 🗂️
-        run: ls -al
-  
+      - name: List Directory Contents After Checkout 🗂️
+        run: ls -al  
+
       # Start backend Docker containers
       - name: Start care backend docker containers 🐳
         run: |
           cd care
-          echo DISABLE_RATELIMIT=True >> docker/.prebuilt.env
-          echo "CORS_ALLOWED_ORIGINS=\"[\\\"http://localhost:4000\\\"]\"" >> docker/.prebuilt.env
-          echo JWKS_BASE64=\"$(cat ../.github/runner-files/jwks.b64.txt)\" >> docker/.prebuilt.env
+          echo "DISABLE_RATELIMIT=True" >> docker/.prebuilt.env
+          echo 'CORS_ALLOWED_ORIGINS=["http://localhost:4000"]' >> docker/.prebuilt.env
+          echo "JWKS_BASE64=${{ secrets.JWKS_BASE64 }}" >> docker/.prebuilt.env
           make docker_config_file=docker-compose.pre-built.yaml up
-          cd ..
+        env:
+          JWKS_BASE64: ${{ secrets.JWKS_BASE64 }}
 
       # Check backend health
       - name: Wait for backend health check ♻
