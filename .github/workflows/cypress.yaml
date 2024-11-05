@@ -51,6 +51,10 @@ jobs:
           max_attempts: 5
           command: curl -o /dev/null -s -w "%{http_code}\n" http://localhost:9000
           on_retry_command: sleep 5
+          
+      - name: List Docker Images 🐳
+        run: 
+          docker images
 
       - name: Cache Backend Docker Image 📦
         run: |
@@ -206,4 +210,4 @@ jobs:
         with:
           name: cypress-videos
           path: cypress/videos
-          
+
