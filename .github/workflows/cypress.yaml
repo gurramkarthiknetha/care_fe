@@ -57,7 +57,7 @@ jobs:
 
       - name: Cache Backend Docker Image 📦
         run: |
-          docker save care_local -o backend-cache.tar
+          docker save ghcr.io/ohcnetwork/care:latest -o backend-cache.tar
 
       - name: Upload Backend Cache Artifact
         uses: actions/upload-artifact@v3
