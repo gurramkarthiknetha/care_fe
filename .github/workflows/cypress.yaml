@@ -8,16 +8,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  cypress-run:
+  build-and-cache:
     permissions: write-all
-    if: github.repository == 'ohcnetwork/care_fe'
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        containers: [1, 2, 3, 4]
-    env:
-      REACT_CARE_API_URL: http://localhost:9000
+    if: github.repository == 'ohcnetwork/care_fe'
     steps:
       - name: Checkout 📥
         uses: actions/checkout@v3
@@ -91,9 +85,8 @@ jobs:
             name: frontend-build-cache
             path: frontend-build-cache.tar
 
-jobs:
-  cypress-run:
-    needs: build-and-cache  # Ensure this job runs after the build and cache job
+  cypress-tests:
+    needs: build-and-cache  # Ensure this job runs after build-and-cache completes
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
