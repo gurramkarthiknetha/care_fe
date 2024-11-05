@@ -53,8 +53,8 @@ jobs:
           on_retry_command: sleep 5
           
       - name: List Docker Images 🐳
-        run: 
-          docker images
+        run: |
+          run: docker images
 
       - name: Cache Backend Docker Image 📦
         run: |
