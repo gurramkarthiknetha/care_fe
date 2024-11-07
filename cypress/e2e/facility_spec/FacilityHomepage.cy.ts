@@ -166,7 +166,7 @@ describe("Facility Homepage Function", () => {
     facilityNotify.verifyGetNotificationReq();
     cy.verifyContentPresence("#notification-message", [noitificationMessage]);
     facilityNotify.interceptGetNotificationReq();
-    cy.verifyAndClickElement("#notification-slide-btn", "Notifications");
+    facilityNotify.openNotificationSlide();
     facilityNotify.verifyGetNotificationReq();
     cy.verifyContentPresence("#notification-slide-msg", [noitificationMessage]);
   });

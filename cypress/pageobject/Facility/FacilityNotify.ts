@@ -3,6 +3,10 @@ export class FacilityNotify {
     cy.get("#NotifyModalMessageInput").should("be.visible").type(message);
   }
 
+  openNotificationSlide(): void {
+    cy.get("#notification-slide-btn").should("be.visible").click();
+  }
+
   visitNoticeBoard(): void {
     cy.get("a[href='/notice_board']").should("be.visible").click();
   }
