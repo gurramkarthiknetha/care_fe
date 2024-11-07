@@ -21,6 +21,7 @@ type SidebarItemProps = {
 
 type SidebarItemBaseProps = SidebarItemProps & {
   shrinked?: boolean;
+  id?: string;
 };
 
 const SidebarItemBase = forwardRef<HTMLAnchorElement, SidebarItemBaseProps>(
@@ -31,6 +32,7 @@ const SidebarItemBase = forwardRef<HTMLAnchorElement, SidebarItemBaseProps>(
     return (
       <Link
         ref={ref}
+        id={props?.id}
         className={`tooltip relative ml-1 mr-2 h-12 flex-1 cursor-pointer rounded-md py-1 font-medium text-gray-600 transition md:flex-none ${
           props.selected
             ? "bg-white text-green-800 shadow"

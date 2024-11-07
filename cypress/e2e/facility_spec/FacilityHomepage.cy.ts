@@ -1,15 +1,16 @@
 // FacilityCreation
-
-import LoginPage from "../../pageobject/Login/LoginPage";
-import FacilityHome from "../../pageobject/Facility/FacilityHome";
-import ManageUserPage from "../../pageobject/Users/ManageUserPage";
-import FacilityPage from "../../pageobject/Facility/FacilityCreation";
-import { UserPage } from "../../pageobject/Users/UserSearch";
 import { AssetPagination } from "../../pageobject/Asset/AssetPagination";
+import FacilityPage from "../../pageobject/Facility/FacilityCreation";
+import FacilityHome from "../../pageobject/Facility/FacilityHome";
+import { FacilityNotify } from "../../pageobject/Facility/FacilityNotify";
+import LoginPage from "../../pageobject/Login/LoginPage";
+import ManageUserPage from "../../pageobject/Users/ManageUserPage";
+import { UserPage } from "../../pageobject/Users/UserSearch";
 
 describe("Facility Homepage Function", () => {
   const loginPage = new LoginPage();
   const facilityHome = new FacilityHome();
+  const facilityNotify = new FacilityNotify();
   const facilityPage = new FacilityPage();
   const manageUserPage = new ManageUserPage();
   const userPage = new UserPage();
@@ -23,7 +24,9 @@ describe("Facility Homepage Function", () => {
   const district = "Ernakulam";
   const localBody = "Aikaranad";
   const facilityType = "Private Hospital";
-
+  const notificationErrorMsg = "Message cannot be empty";
+  const noitificationMessage =
+    "Reminder: The monthly report submission deadline is on 15th Nov. Ensure all entries are updated.";
   before(() => {
     loginPage.loginAsDistrictAdmin();
     cy.saveLocalStorage();
@@ -42,9 +45,6 @@ describe("Facility Homepage Function", () => {
     facilityHome.clickViewCnsButton();
     facilityHome.verifyCnsUrl();
     facilityHome.navigateBack();
-    // view notify button
-    facilityHome.clickFacilityNotifyButton();
-    facilityHome.verifyAndCloseNotifyModal();
     // view facility button
     facilityHome.clickViewFacilityDetails();
     facilityPage.getFacilityName().should("be.visible");
@@ -133,6 +133,42 @@ describe("Facility Homepage Function", () => {
     facilityHome.selectLocation(facilityLocaion);
     facilityHome.clickLiveMonitorButton();
     facilityHome.verifyLiveMonitorUrl();
+  });
+
+  it("Verify Notice Board Functionality", () => {
+    // search facility and verify it's loaded or not
+    facilityNotify.interceptFacilitySearchReq();
+    manageUserPage.typeFacilitySearch(facilityName);
+    facilityNotify.verifyFacilitySearchReq();
+    // verify facility name and notify button and click it
+    manageUserPage.assertFacilityInCard(facilityName);
+    facilityHome.clickFacilityNotifyButton();
+    // check visiblity of pop-up and frontend error on empty message
+    cy.verifyContentPresence("#notify-facility-name", [facilityName]);
+    cy.submitButton("Notify");
+    cy.verifyContentPresence(".error-text", [notificationErrorMsg]);
+    // close pop-up and verify
+    facilityHome.verifyAndCloseNotifyModal();
+    // send notification
+    facilityHome.clickFacilityNotifyButton();
+    facilityNotify.fillNotifyText(noitificationMessage);
+    facilityNotify.interceptPostNotificationReq();
+    cy.submitButton("Notify");
+    cy.verifyNotification("Facility Notified");
+    facilityNotify.verifyPostNotificationReq();
+    // signout as district admin and login as a Nurse
+    loginPage.ensureLoggedIn();
+    loginPage.clickSignOutBtn();
+    loginPage.loginManuallyAsNurse();
+    // Visit Notification Sidebar
+    facilityNotify.interceptGetNotificationReq();
+    facilityNotify.visitNoticeBoard();
+    facilityNotify.verifyGetNotificationReq();
+    cy.verifyContentPresence("#notification-message", [noitificationMessage]);
+    facilityNotify.interceptGetNotificationReq();
+    cy.verifyAndClickElement("#notification-slide-btn", "Notifications");
+    facilityNotify.verifyGetNotificationReq();
+    cy.verifyContentPresence("#notification-slide-msg", [noitificationMessage]);
   });
 
   afterEach(() => {
