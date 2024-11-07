@@ -9,6 +9,7 @@ import useAppHistory from "@/hooks/useAppHistory";
 export type SidebarIcon = React.ReactNode;
 
 type SidebarItemProps = {
+  id?: string;
   ref?: React.Ref<HTMLAnchorElement>;
   text: string;
   icon: SidebarIcon;
@@ -21,7 +22,6 @@ type SidebarItemProps = {
 
 type SidebarItemBaseProps = SidebarItemProps & {
   shrinked?: boolean;
-  id?: string;
 };
 
 const SidebarItemBase = forwardRef<HTMLAnchorElement, SidebarItemBaseProps>(
