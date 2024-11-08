@@ -35,7 +35,7 @@ class FacilityHome {
   }
 
   clickFacilityNotifyButton() {
-    cy.get("#facility-notify").first().click();
+    cy.get("#facility-notify").should("be.visible").first().click();
   }
 
   clickLiveMonitorButton() {

@@ -141,9 +141,10 @@ describe("Facility Homepage Function", () => {
     manageUserPage.typeFacilitySearch(facilityName);
     facilityNotify.verifyFacilitySearchReq();
     // verify facility name and notify button and click it
+    facilityNotify.interceptFacilitySearchReq();
     manageUserPage.assertFacilityInCard(facilityName);
-    // facilityHome.clickFacilityNotifyButton();
-    facilityNotify.clickNotifyButton();
+    facilityNotify.verifyFacilitySearchReq();
+    facilityHome.clickFacilityNotifyButton();
     // check visiblity of pop-up and frontend error on empty message
     cy.verifyContentPresence("#notify-facility-name", [facilityName]);
     cy.submitButton("Notify");
@@ -151,8 +152,7 @@ describe("Facility Homepage Function", () => {
     // close pop-up and verify
     facilityHome.verifyAndCloseNotifyModal();
     // send notification
-    // facilityHome.clickFacilityNotifyButton();
-    facilityNotify.clickNotifyButton();
+    facilityHome.clickFacilityNotifyButton();
     facilityNotify.fillNotifyText(noitificationMessage);
     facilityNotify.interceptPostNotificationReq();
     cy.submitButton("Notify");
