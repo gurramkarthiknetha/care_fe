@@ -141,7 +141,7 @@ describe("Facility Homepage Function", () => {
     manageUserPage.typeFacilitySearch(facilityName);
     facilityNotify.verifyFacilitySearchReq();
     // verify facility name and notify button and click it
-    cy.wait(3000);
+    facilityNotify.checkUrl();
     manageUserPage.assertFacilityInCard(facilityName);
     facilityHome.clickFacilityNotifyButton();
     // check visiblity of pop-up and frontend error on empty message
