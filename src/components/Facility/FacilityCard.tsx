@@ -223,7 +223,7 @@ export const FacilityCard = (props: {
                   <div className="flex flex-wrap gap-2">
                     {["DistrictAdmin", "StateAdmin"].includes(userType) && (
                       <ButtonV2
-                        id="facility-notify-btn"
+                        id="facility-notify"
                         ghost
                         border
                         className="h-[38px]"

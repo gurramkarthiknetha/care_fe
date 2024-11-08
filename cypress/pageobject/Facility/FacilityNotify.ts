@@ -8,7 +8,7 @@ export class FacilityNotify {
   }
 
   clickNotifyButton(): void {
-    cy.get("#facility-notify-btn").should("be.visible").click();
+    cy.get("#facility-notify").should("be.visible").click();
   }
 
   visitNoticeBoard(): void {
