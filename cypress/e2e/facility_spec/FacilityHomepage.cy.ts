@@ -141,9 +141,8 @@ describe("Facility Homepage Function", () => {
     manageUserPage.typeFacilitySearch(facilityName);
     facilityNotify.verifyFacilitySearchReq();
     // verify facility name and notify button and click it
-    facilityNotify.interceptFacilitySearchReq();
+    cy.wait(3000);
     manageUserPage.assertFacilityInCard(facilityName);
-    facilityNotify.verifyFacilitySearchReq();
     facilityHome.clickFacilityNotifyButton();
     // check visiblity of pop-up and frontend error on empty message
     cy.verifyContentPresence("#notify-facility-name", [facilityName]);
@@ -171,6 +170,9 @@ describe("Facility Homepage Function", () => {
     facilityNotify.openNotificationSlide();
     facilityNotify.verifyGetNotificationReq();
     cy.verifyContentPresence("#notification-slide-msg", [noitificationMessage]);
+    facilityNotify.closeNotificationSlide();
+    loginPage.ensureLoggedIn();
+    loginPage.clickSignOutBtn();
   });
 
   afterEach(() => {

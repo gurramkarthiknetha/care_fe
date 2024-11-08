@@ -7,6 +7,10 @@ export class FacilityNotify {
     cy.get("#notification-slide-btn").should("be.visible").click();
   }
 
+  closeNotificationSlide(): void {
+    cy.get("#close-slide-over").should("be.visible").click();
+  }
+
   visitNoticeBoard(): void {
     cy.get("a[href='/notice_board']").should("be.visible").click();
   }
