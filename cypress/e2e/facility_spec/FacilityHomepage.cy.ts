@@ -142,13 +142,16 @@ describe("Facility Homepage Function", () => {
     facilityNotify.verifyFacilitySearchReq();
     // verify facility name and notify button and click it
     manageUserPage.assertFacilityInCard(facilityName);
+    cy.log("Clicking facility notify button");
     facilityHome.clickFacilityNotifyButton();
+    cy.log("Clicked facility notify button");
     // check visiblity of pop-up and frontend error on empty message
     cy.verifyContentPresence("#notify-facility-name", [facilityName]);
     cy.submitButton("Notify");
     cy.verifyContentPresence(".error-text", [notificationErrorMsg]);
     // close pop-up and verify
     facilityHome.verifyAndCloseNotifyModal();
+    cy.log("Clicked facility notify button again");
     // send notification
     facilityHome.clickFacilityNotifyButton();
     facilityNotify.fillNotifyText(noitificationMessage);
