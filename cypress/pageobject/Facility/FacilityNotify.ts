@@ -1,7 +1,4 @@
-import FacilityHome from "./FacilityHome";
-
 export class FacilityNotify {
-  facilityHome = new FacilityHome();
   fillNotifyText(message: string): void {
     cy.get("#NotifyModalMessageInput").should("be.visible").type(message);
   }
@@ -22,8 +19,10 @@ export class FacilityNotify {
     cy.get("#notification-slide-btn").should("be.visible").click();
   }
 
-  checkUrl(): void {
-    cy.url().should("match", new RegExp(`/facility\\?.*search=*`));
+  updateUrl(): void {
+    cy.awaitUrl(
+      "http://localhost:4000/facility?page=1&limit=14&search=Dummy+Facility+40",
+    );
   }
 
   interceptFacilitySearchReq(): void {
