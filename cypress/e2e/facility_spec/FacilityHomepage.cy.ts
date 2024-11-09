@@ -145,7 +145,6 @@ describe("Facility Homepage Function", () => {
     facilityNotify.verifyUrlContains("Dummy+Facility+40");
     facilityPage.verifyFacilityBadgeContent(facilityName);
     manageUserPage.assertFacilityInCard(facilityName);
-    cy.wait(5000);
     facilityHome.clickFacilityNotifyButton();
     // check visiblity of pop-up and frontend error on empty message
     facilityNotify.verifyFacilityName(facilityName);
@@ -161,6 +160,7 @@ describe("Facility Homepage Function", () => {
     facilityNotify.verifyPostNotificationReq();
     cy.verifyNotification("Facility Notified");
     cy.closeNotification();
+    cy.wait(10000);
     // signout as district admin and login as a Nurse
     loginPage.ensureLoggedIn();
     loginPage.clickSignOutBtn();
