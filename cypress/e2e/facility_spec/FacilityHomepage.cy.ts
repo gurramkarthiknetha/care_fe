@@ -32,6 +32,7 @@ describe("Facility Homepage Function", () => {
   });
 
   beforeEach(() => {
+    cy.clearLocalStorage(/filters--.+/);
     cy.restoreLocalStorage();
     cy.awaitUrl("/facility");
   });

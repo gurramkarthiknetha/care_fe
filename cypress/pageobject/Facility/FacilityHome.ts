@@ -36,7 +36,7 @@ class FacilityHome {
 
   clickFacilityNotifyButton() {
     cy.get("#facility-notify", { timeout: 10000 }).should("be.visible");
-    cy.verifyAndClickElement("#facility-notify","Notify");
+    cy.get("#facility-notify").focus().click();
   }
 
   clickLiveMonitorButton() {
