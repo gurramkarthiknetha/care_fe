@@ -1,58 +1,50 @@
 export default class FacilityNotify {
-  verifyFacilityName(facilityName: string): void {
+  verifyFacilityName(facilityName: string) {
     cy.verifyContentPresence("#notify-facility-name", [facilityName]);
   }
 
-  verifyErrorMessage(errorMessage: string): void {
+  verifyErrorMessage(errorMessage: string) {
     cy.verifyContentPresence(".error-text", [errorMessage]);
   }
 
-  fillNotifyText(message: string): void {
-    cy.get("#NotifyModalMessageInput").should("be.visible").type(message);
+  fillNotifyText(message: string) {
+    cy.get("#NotifyModalMessageInput").scrollIntoView();
+    cy.get("#NotifyModalMessageInput").click().type(message);
   }
 
-  openNotificationSlide(): void {
+  openNotificationSlide() {
     cy.get("#notification-slide-btn").should("be.visible").click();
   }
 
-  closeNotificationSlide(): void {
+  closeNotificationSlide() {
     cy.get("#close-slide-over").should("be.visible").click();
   }
 
-  visitNoticeBoard(): void {
+  visitNoticeBoard() {
     cy.get("a[href='/notice_board']").should("be.visible").click();
   }
 
-  visitNotificationSideBar(): void {
+  visitNotificationSideBar() {
     cy.get("#notification-slide-btn").should("be.visible").click();
   }
 
-  updateUrl(): void {
-    cy.awaitUrl(
-      "http://localhost:4000/facility?page=1&limit=14&search=Dummy+Facility+40",
-    );
+  verifyUrlContains(substring: string) {
+    cy.url().should("include", substring);
   }
 
-  interceptFacilitySearchReq(): void {
-    cy.intercept("GET", "**/api/v1/facility/**").as("searchFacility");
-  }
-  verifyFacilitySearchReq(): void {
-    cy.wait("@searchFacility").its("response.statusCode").should("eq", 200);
-  }
-
-  interceptPostNotificationReq(): void {
+  interceptPostNotificationReq() {
     cy.intercept("POST", "**/api/v1/notification/notify").as("notifyFacility");
   }
 
-  verifyPostNotificationReq(): void {
+  verifyPostNotificationReq() {
     cy.wait("@notifyFacility").its("response.statusCode").should("eq", 204);
   }
 
-  interceptGetNotificationReq(): void {
+  interceptGetNotificationReq() {
     cy.intercept("GET", "**/api/v1/notification/**").as("getNotifications");
   }
 
-  verifyGetNotificationReq(): void {
+  verifyGetNotificationReq() {
     cy.wait("@getNotifications").its("response.statusCode").should("eq", 200);
   }
 }

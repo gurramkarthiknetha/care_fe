@@ -25,8 +25,7 @@ describe("Facility Homepage Function", () => {
   const localBody = "Aikaranad";
   const facilityType = "Private Hospital";
   const notificationErrorMsg = "Message cannot be empty";
-  const noitificationMessage =
-    "Reminder: The monthly report submission deadline is on 15th Nov. Ensure all entries are updated.";
+  const notificationMessage = "Test Notification";
   before(() => {
     loginPage.loginAsDistrictAdmin();
     cy.saveLocalStorage();
@@ -35,6 +34,46 @@ describe("Facility Homepage Function", () => {
   beforeEach(() => {
     cy.restoreLocalStorage();
     cy.awaitUrl("/facility");
+  });
+
+  it("Verify Notice Board Functionality", () => {
+    // search facility and verify it's loaded or not
+    manageUserPage.interceptFacilitySearchReq();
+    manageUserPage.typeFacilitySearch(facilityName);
+    manageUserPage.verifyFacilitySearchReq();
+    // verify facility name and notify button and click it
+    facilityNotify.verifyUrlContains("Dummy+Facility+40");
+    facilityPage.verifyFacilityBadgeContent(facilityName);
+    manageUserPage.assertFacilityInCard(facilityName);
+    facilityHome.clickFacilityNotifyButton();
+    // check visiblity of pop-up and frontend error on empty message
+    facilityNotify.verifyFacilityName(facilityName);
+    cy.submitButton("Notify");
+    facilityNotify.verifyErrorMessage(notificationErrorMsg);
+    // close pop-up and verify
+    facilityHome.verifyAndCloseNotifyModal();
+    // send notification
+    facilityHome.clickFacilityNotifyButton();
+    facilityNotify.fillNotifyText(notificationMessage);
+    facilityNotify.interceptPostNotificationReq();
+    cy.submitButton("Notify");
+    facilityNotify.verifyPostNotificationReq();
+    cy.verifyNotification("Facility Notified");
+    cy.closeNotification();
+    // signout as district admin and login as a Nurse
+    loginPage.ensureLoggedIn();
+    loginPage.clickSignOutBtn();
+    loginPage.loginManuallyAsNurse();
+    // Visit Notification Sidebar
+    facilityNotify.interceptGetNotificationReq();
+    facilityNotify.visitNoticeBoard();
+    facilityNotify.verifyGetNotificationReq();
+    cy.verifyContentPresence("#notification-message", [notificationMessage]);
+    facilityNotify.interceptGetNotificationReq();
+    facilityNotify.openNotificationSlide();
+    facilityNotify.verifyGetNotificationReq();
+    cy.verifyContentPresence("#notification-slide-msg", [notificationMessage]);
+    facilityNotify.closeNotificationSlide();
   });
 
   it("Verify the Facility card button redirection", () => {
@@ -133,47 +172,6 @@ describe("Facility Homepage Function", () => {
     facilityHome.selectLocation(facilityLocaion);
     facilityHome.clickLiveMonitorButton();
     facilityHome.verifyLiveMonitorUrl();
-  });
-
-  it("Verify Notice Board Functionality", () => {
-    // search facility and verify it's loaded or not
-    facilityNotify.interceptFacilitySearchReq();
-    manageUserPage.typeFacilitySearch(facilityName);
-    facilityNotify.verifyFacilitySearchReq();
-    // verify facility name and notify button and click it
-    facilityNotify.updateUrl();
-    facilityPage.verifyFacilityBadgeContent(facilityName);
-    manageUserPage.assertFacilityInCard(facilityName);
-    facilityHome.clickFacilityNotifyButton();
-    // check visiblity of pop-up and frontend error on empty message
-    facilityNotify.verifyFacilityName(facilityName);
-    cy.submitButton("Notify");
-    facilityNotify.verifyErrorMessage(notificationErrorMsg);
-    // close pop-up and verify
-    facilityHome.verifyAndCloseNotifyModal();
-    // send notification
-    facilityHome.clickFacilityNotifyButton();
-    facilityNotify.fillNotifyText(noitificationMessage);
-    facilityNotify.interceptPostNotificationReq();
-    cy.submitButton("Notify");
-    cy.verifyNotification("Facility Notified");
-    facilityNotify.verifyPostNotificationReq();
-    // signout as district admin and login as a Nurse
-    loginPage.ensureLoggedIn();
-    loginPage.clickSignOutBtn();
-    loginPage.loginManuallyAsNurse();
-    // Visit Notification Sidebar
-    facilityNotify.interceptGetNotificationReq();
-    facilityNotify.visitNoticeBoard();
-    facilityNotify.verifyGetNotificationReq();
-    cy.verifyContentPresence("#notification-message", [noitificationMessage]);
-    facilityNotify.interceptGetNotificationReq();
-    facilityNotify.openNotificationSlide();
-    facilityNotify.verifyGetNotificationReq();
-    cy.verifyContentPresence("#notification-slide-msg", [noitificationMessage]);
-    facilityNotify.closeNotificationSlide();
-    loginPage.ensureLoggedIn();
-    loginPage.clickSignOutBtn();
   });
 
   afterEach(() => {
