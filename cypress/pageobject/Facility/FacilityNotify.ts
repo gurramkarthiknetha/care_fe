@@ -3,7 +3,7 @@ export class FacilityNotify {
     cy.verifyContentPresence("#notify-facility-name", [facilityName]);
   }
 
-  verifyErrorMessage(errorMessage: strinf): void {
+  verifyErrorMessage(errorMessage: string): void {
     cy.verifyContentPresence(".error-text", [errorMessage]);
   }
 

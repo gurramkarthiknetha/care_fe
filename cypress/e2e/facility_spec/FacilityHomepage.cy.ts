@@ -135,14 +135,13 @@ describe("Facility Homepage Function", () => {
     facilityHome.verifyLiveMonitorUrl();
   });
 
-  it("Verify Notice Board Functionality", { retries: { runMode: 1 } }, () => {
+  it("Verify Notice Board Functionality", () => {
     // search facility and verify it's loaded or not
     facilityNotify.interceptFacilitySearchReq();
     manageUserPage.typeFacilitySearch(facilityName);
     facilityNotify.verifyFacilitySearchReq();
     // verify facility name and notify button and click it
     facilityNotify.updateUrl();
-    cy.wait(3000);
     facilityPage.verifyFacilityBadgeContent(facilityName);
     manageUserPage.assertFacilityInCard(facilityName);
     facilityHome.clickFacilityNotifyButton();
