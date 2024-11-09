@@ -1,4 +1,4 @@
-export class FacilityNotify {
+export default class FacilityNotify {
   verifyFacilityName(facilityName: string): void {
     cy.verifyContentPresence("#notify-facility-name", [facilityName]);
   }

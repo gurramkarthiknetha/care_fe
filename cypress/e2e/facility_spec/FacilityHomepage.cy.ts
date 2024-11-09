@@ -2,7 +2,7 @@
 import { AssetPagination } from "../../pageobject/Asset/AssetPagination";
 import FacilityPage from "../../pageobject/Facility/FacilityCreation";
 import FacilityHome from "../../pageobject/Facility/FacilityHome";
-import { FacilityNotify } from "../../pageobject/Facility/FacilityNotify";
+import FacilityNotify from "../../pageobject/Facility/FacilityNotify";
 import LoginPage from "../../pageobject/Login/LoginPage";
 import ManageUserPage from "../../pageobject/Users/ManageUserPage";
 import { UserPage } from "../../pageobject/Users/UserSearch";
