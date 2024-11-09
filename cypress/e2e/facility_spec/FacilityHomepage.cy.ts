@@ -145,6 +145,7 @@ describe("Facility Homepage Function", () => {
     facilityNotify.verifyUrlContains("Dummy+Facility+40");
     facilityPage.verifyFacilityBadgeContent(facilityName);
     manageUserPage.assertFacilityInCard(facilityName);
+    cy.wait(5000);
     facilityHome.clickFacilityNotifyButton();
     // check visiblity of pop-up and frontend error on empty message
     facilityNotify.verifyFacilityName(facilityName);
