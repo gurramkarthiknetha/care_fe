@@ -1,4 +1,12 @@
 export class FacilityNotify {
+  verifyFacilityName(facilityName: string): void {
+    cy.verifyContentPresence("#notify-facility-name", [facilityName]);
+  }
+
+  verifyErrorMessage(errorMessage: strinf): void {
+    cy.verifyContentPresence(".error-text", [errorMessage]);
+  }
+
   fillNotifyText(message: string): void {
     cy.get("#NotifyModalMessageInput").should("be.visible").type(message);
   }

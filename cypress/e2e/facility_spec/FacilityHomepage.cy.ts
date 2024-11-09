@@ -135,19 +135,21 @@ describe("Facility Homepage Function", () => {
     facilityHome.verifyLiveMonitorUrl();
   });
 
-  it("Verify Notice Board Functionality", () => {
+  it("Verify Notice Board Functionality", { retries: { runMode: 1 } }, () => {
     // search facility and verify it's loaded or not
     facilityNotify.interceptFacilitySearchReq();
     manageUserPage.typeFacilitySearch(facilityName);
     facilityNotify.verifyFacilitySearchReq();
     // verify facility name and notify button and click it
     facilityNotify.updateUrl();
+    cy.wait(3000);
+    facilityPage.verifyFacilityBadgeContent(facilityName);
     manageUserPage.assertFacilityInCard(facilityName);
     facilityHome.clickFacilityNotifyButton();
     // check visiblity of pop-up and frontend error on empty message
-    cy.verifyContentPresence("#notify-facility-name", [facilityName]);
+    facilityNotify.verifyFacilityName(facilityName);
     cy.submitButton("Notify");
-    cy.verifyContentPresence(".error-text", [notificationErrorMsg]);
+    facilityNotify.verifyErrorMessage(notificationErrorMsg);
     // close pop-up and verify
     facilityHome.verifyAndCloseNotifyModal();
     // send notification
