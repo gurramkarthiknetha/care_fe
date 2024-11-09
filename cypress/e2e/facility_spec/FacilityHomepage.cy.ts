@@ -168,6 +168,7 @@ describe("Facility Homepage Function", () => {
     // Visit Notification Sidebar
     facilityNotify.interceptGetNotificationReq();
     facilityNotify.visitNoticeBoard();
+    cy.reload();
     facilityNotify.verifyGetNotificationReq();
     cy.verifyContentPresence("#notification-message", [notificationMessage]);
     facilityNotify.interceptGetNotificationReq();
