@@ -141,26 +141,26 @@ describe("Facility Homepage Function", () => {
     manageUserPage.interceptFacilitySearchReq();
     manageUserPage.typeFacilitySearch(facilityName);
     manageUserPage.verifyFacilitySearchReq();
-    // verify facility name and notify button and click it
+    // verify facility name and card reflection
     facilityNotify.verifyUrlContains("Dummy+Facility+40");
     facilityPage.verifyFacilityBadgeContent(facilityName);
     manageUserPage.assertFacilityInCard(facilityName);
+    // send notification to a facility
     facilityHome.clickFacilityNotifyButton();
-    // check visiblity of pop-up and frontend error on empty message
     facilityNotify.verifyFacilityName(facilityName);
-    cy.submitButton("Notify");
-    facilityNotify.verifyErrorMessage(notificationErrorMsg);
-    // close pop-up and verify
-    facilityHome.verifyAndCloseNotifyModal();
-    // send notification
-    facilityHome.clickFacilityNotifyButton();
     facilityNotify.fillNotifyText(notificationMessage);
     facilityNotify.interceptPostNotificationReq();
     cy.submitButton("Notify");
     facilityNotify.verifyPostNotificationReq();
     cy.verifyNotification("Facility Notified");
     cy.closeNotification();
-    cy.wait(10000);
+    // Verify the frontend error on empty message
+    facilityHome.clickFacilityNotifyButton();
+    facilityNotify.verifyFacilityName(facilityName);
+    cy.submitButton("Notify");
+    facilityNotify.verifyErrorMessage(notificationErrorMsg);
+    // close pop-up and verify
+    facilityHome.verifyAndCloseNotifyModal();
     // signout as district admin and login as a Nurse
     loginPage.ensureLoggedIn();
     loginPage.clickSignOutBtn();
