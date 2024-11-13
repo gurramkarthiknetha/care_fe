@@ -9,7 +9,7 @@ interface SharedSectionTableProps {
   choices?: Record<string, Record<string | number, string>>;
 }
 
-const LogUpdateAnalayseTable: React.FC<SharedSectionTableProps> = ({
+const LogUpdateAnalyseTable: React.FC<SharedSectionTableProps> = ({
   data,
   rows,
   choices = {},
@@ -90,4 +90,4 @@ const LogUpdateAnalayseTable: React.FC<SharedSectionTableProps> = ({
   );
 };
 
-export default LogUpdateAnalayseTable;
+export default LogUpdateAnalyseTable;

@@ -5,7 +5,7 @@ import Loading from "@/components/Common/Loading";
 import PageTitle from "@/components/Common/PageTitle";
 import Pagination from "@/components/Common/Pagination";
 import { ConsultationTabProps } from "@/components/Facility/ConsultationDetails/index";
-import LogUpdateAnalayseTable from "@/components/Facility/Consultations/LogUpdateAnalayseTable";
+import LogUpdateAnalyseTable from "@/components/Facility/Consultations/LogUpdateAnalyseTable";
 import {
   NursingPlotFields,
   NursingPlotRes,
@@ -158,7 +158,7 @@ const NursingPlot = ({ consultationId }: ConsultationTabProps) => {
             </div>
           </div>
         ) : (
-          <LogUpdateAnalayseTable data={tableData} rows={rows} />
+          <LogUpdateAnalyseTable data={tableData} rows={rows} />
         )}
       </div>
 
@@ -220,7 +220,7 @@ const RoutineSection = ({ consultationId }: ConsultationTabProps) => {
 
   return (
     <div className="pb-8 pt-4">
-      <LogUpdateAnalayseTable
+      <LogUpdateAnalyseTable
         data={results}
         rows={ROUTINE_ROWS}
         choices={REVERSE_CHOICES}
