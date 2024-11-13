@@ -124,13 +124,11 @@ const NursingPlot = ({ consultationId }: ConsultationTabProps) => {
    * Transforms nursing procedure results into a structured format where dates are mapped to procedures and their descriptions.
    * Groups nursing data by date, collecting unique procedures and their corresponding descriptions.
    */
-  const dataNew = Object.entries(results).reduce(
+  const tableData = Object.entries(results).reduce(
     (acc: Record<string, Record<string, string>>, [date, result]) => {
       if ("nursing" in result) {
         result.nursing.forEach((field) => {
-          if (field.procedure && !acc[date]) {
-            acc[date] = {};
-          }
+          if (field.procedure && !acc[date]) acc[date] = {};
           acc[date][field.procedure] = field.description;
           // Add procedure to the set of procedures to display
           fieldsToDisplay.add(field.procedure);
@@ -160,7 +158,7 @@ const NursingPlot = ({ consultationId }: ConsultationTabProps) => {
             </div>
           </div>
         ) : (
-          <LogUpdateAnalayseTable data={dataNew} rows={rows} />
+          <LogUpdateAnalayseTable data={tableData} rows={rows} />
         )}
       </div>
 
