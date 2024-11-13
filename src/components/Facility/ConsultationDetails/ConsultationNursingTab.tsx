@@ -4,12 +4,11 @@ import { useTranslation } from "react-i18next";
 import Loading from "@/components/Common/Loading";
 import PageTitle from "@/components/Common/PageTitle";
 import Pagination from "@/components/Common/Pagination";
-import { ProcedureType } from "@/components/Common/prescription-builder/ProcedureBuilder";
 import { ConsultationTabProps } from "@/components/Facility/ConsultationDetails/index";
 import LogUpdateAnalayseTable from "@/components/Facility/Consultations/LogUpdateAnalayseTable";
 import {
-  DailyRoundsRes,
   NursingPlotFields,
+  NursingPlotRes,
   RoutineAnalysisRes,
   RoutineFields,
 } from "@/components/Facility/models";
@@ -93,7 +92,9 @@ const ROUTINE_ROWS = [
 
 const NursingPlot = ({ consultationId }: ConsultationTabProps) => {
   const { t } = useTranslation();
-  const [results, setResults] = useState<DailyRoundsRes["results"]>({});
+  const [results, setResults] = useState<{ [date: string]: NursingPlotRes }>(
+    {},
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
@@ -106,8 +107,8 @@ const NursingPlot = ({ consultationId }: ConsultationTabProps) => {
         body: { page: currentPage, fields: NursingPlotFields },
         pathParams: { consultationId },
       });
-      if (res && res.ok && data) {
-        setResults(data.results);
+      if (res?.ok && data) {
+        setResults(data.results as { [date: string]: NursingPlotRes });
         setTotalCount(data.count);
       }
     };
@@ -117,65 +118,53 @@ const NursingPlot = ({ consultationId }: ConsultationTabProps) => {
 
   const handlePagination = (page: number) => setCurrentPage(page);
 
-  const data = Object.entries(results).map(([date, result]) => {
-    if ("nursing" in result) {
-      return {
-        date: date,
-        nursing: result.nursing,
-      };
-    } else {
-      return {
-        date: date,
-        nursing: null,
-      };
-    }
-  });
+  let fieldsToDisplay = new Set<string>();
 
-  const dataToDisplay = data.flatMap(
-    (x) => x.nursing?.map((f) => ({ ...f, date: x.date })) ?? [],
-  );
-
-  const filterEmpty = (field: (typeof NURSING_CARE_PROCEDURES)[number]) => {
-    const filtered = dataToDisplay.filter(
-      (i: ProcedureType) => i.procedure === field,
-    );
-    return filtered.length > 0;
-  };
-
-  const areFieldsEmpty = () =>
-    NURSING_CARE_PROCEDURES.every((field) => !filterEmpty(field));
-
-  const rows = NURSING_CARE_PROCEDURES.filter((f) => filterEmpty(f)).map(
-    (procedure) => ({
-      field: procedure,
-      title: t(`NURSING_CARE_PROCEDURE__${procedure}`),
-    }),
-  );
-
-  const mappedData = dataToDisplay.reduce(
-    (acc: Record<string, Record<string, string>>, item) => {
-      if (!acc[item.date]) acc[item.date] = {};
-      acc[item.date][item.procedure] = item.description;
+  /**
+   * Transforms nursing procedure results into a structured format where dates are mapped to procedures and their descriptions.
+   * Groups nursing data by date, collecting unique procedures and their corresponding descriptions.
+   */
+  const dataNew = Object.entries(results).reduce(
+    (acc: Record<string, Record<string, string>>, [date, result]) => {
+      if ("nursing" in result) {
+        result.nursing.forEach((field) => {
+          if (field.procedure && !acc[date]) {
+            acc[date] = {};
+          }
+          acc[date][field.procedure] = field.description;
+          // Add procedure to the set of procedures to display
+          fieldsToDisplay.add(field.procedure);
+        });
+      }
       return acc;
     },
     {},
   );
 
+  fieldsToDisplay = fieldsToDisplay.intersection(
+    new Set(NURSING_CARE_PROCEDURES),
+  );
+
+  const rows = Array.from(fieldsToDisplay).map((procedure) => ({
+    field: procedure,
+    title: t(`NURSING_CARE_PROCEDURE__${procedure}`),
+  }));
+
   return (
     <div>
       <div>
-        {areFieldsEmpty() ? (
+        {fieldsToDisplay.size == 0 ? (
           <div className="mt-1 w-full rounded-lg border bg-white p-4 shadow">
             <div className="flex items-center justify-center text-2xl font-bold text-secondary-500">
               {t("no_data_found")}
             </div>
           </div>
         ) : (
-          <LogUpdateAnalayseTable data={mappedData} rows={rows} />
+          <LogUpdateAnalayseTable data={dataNew} rows={rows} />
         )}
       </div>
 
-      {totalCount > PAGINATION_LIMIT && !areFieldsEmpty() && (
+      {totalCount > PAGINATION_LIMIT && fieldsToDisplay.size > 0 && (
         <div className="mt-4 flex w-full justify-center">
           <Pagination
             cPage={currentPage}
