@@ -88,7 +88,7 @@ export const FacilityCard = (props: {
                       </div>
                     )}
                     <div
-                      className="flex flex-wrap items-center justify-between"
+                      className="flex flex-wrap items-center gap-2 justify-between"
                       id="facility-name-card"
                     >
                       <div>
@@ -220,7 +220,7 @@ export const FacilityCard = (props: {
                       </form>
                     </DialogModal>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 justify-center">
                     {["DistrictAdmin", "StateAdmin"].includes(userType) && (
                       <ButtonV2
                         id="facility-notify"
