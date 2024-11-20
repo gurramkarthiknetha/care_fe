@@ -1323,6 +1323,8 @@ input[type="number"] {
     }
     .bshadow{
         border:solid rgb(168, 168, 168);
-        /* box-shadow: 3px solid rgb(0, 0, 0) !important; */
+    }
+    .mtrequired{
+        margin-top: 0.5rem;
     }
 }
